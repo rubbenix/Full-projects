@@ -43,13 +43,32 @@
     x-letter {
         color: var(--gray);
         position: relative;
+
         &.active::before {
             content: '|';
             color: var(--yellow);
             font-size: 14px;
             position: absolute;
-            left: -8px;
+            left: -65%;
             animation: 1.2s blink infinite ease-in-out;
+        }
+        &.active.is-last::before {
+            left: 65%;
+        }
+
+        &.correct {
+            color: var(--green);
+        }
+
+        &.incorrect {
+            color: var(--red);
+        }
+    }
+    x-word{
+        border-bottom: 1.5px solid transparent;
+        transition: border-color 0.3s ease-in-out;
+        &.marked {
+            border-color: var(--red);
         }
     }
     @keyframes blink {
@@ -73,17 +92,17 @@
     const paragraphElement = document.getElementById("p");
     const inputElement = document.getElementById("input");
 
-    const INITIAL_TIME = 60;
-    const TEXT = "The world blue is our over beautiful things.";
+    const INITIAL_TIME = 60
+    const TEXT = "the world blue is our over beautiful things."
 
-    let currentTime = INITIAL_TIME;
-    let words = [];
+    let currentTime = INITIAL_TIME
+    let words = []
 
-    initGame();
-    initEvents();
+    initGame()
+    initEvents()
 
     function initGame() {
-        words = TEXT.split(' ').slice(0, 32);
+        words = TEXT.split(' ').slice(0, 32)
         currentTime = INITIAL_TIME;
 
         timerElement.textContent = currentTime;
@@ -98,21 +117,21 @@
                     .join('')}
             </x-word>
             `
-        }).join('');
+        }).join('')
     }
 
     //Seleccionamos la primera palabra del párrafo
-    const firstWordElement = paragraphElement.querySelector('x-word');
-    firstWordElement.classList.add('active');
-    firstWordElement.querySelector('x-letter').classList.add('active');
+    const firstWordElement = paragraphElement.querySelector('x-word')
+    firstWordElement.classList.add('active')
+    firstWordElement.querySelector('x-letter').classList.add('active')
 
     const intervalId = setInterval(() => {
         currentTime--;
-        timerElement.textContent = currentTime;
+        timerElement.textContent = currentTime
 
         if (currentTime === 0) {
-            clearInterval(intervalId);
-            gameOver();
+            clearInterval(intervalId)
+            gameOver()
         }
     }, 1000);
 
@@ -123,19 +142,85 @@
             inputElement.focus();
         });
 
-        inputElement.addEventListener('keydown', onKeyDown);
-        inputElement.addEventListener('keyup', onKeyUp);
+        inputElement.addEventListener('keydown', onKeyDown)
+        inputElement.addEventListener('keyup', onKeyUp)
     }
-    function onKeyDown(){}
+    function onKeyDown(event){
+        const currentWordElement = paragraphElement.querySelector('x-word.active')
+        const currentLetterElement = currentWordElement.querySelector('x-letter.active')
+
+        const {key} = event
+        if(key === ' '){
+            event.preventDefault();
+            //recuperar la siguiente palabra 'hermana'
+            const nextWordElement = currentWordElement.nextElementSibling
+            const nextLetterElement = nextWordElement.querySelector('x-letter')
+
+            currentWordElement.classList.remove('active','marked','correct')
+            currentLetterElement.classList.remove('active')
+
+            nextWordElement.classList.add('active')
+            nextLetterElement.classList.add('active')
+            //resetear input una vez cambiado de palabra
+            inputElement.value = ''
+            // comprobar si todas las letras son correctas
+            const allLetters = currentWordElement.querySelectorAll('x-letter');
+            const allCorrect = Array.from(allLetters).every(l => l.classList.contains('correct'));
+            if (allCorrect) {
+                currentWordElement.classList.add('correct');
+            } else {
+                currentWordElement.classList.add('marked');
+            }
+            return;
+        }
+        //dar al boton de retroceso para volver a la palabra anterior.
+        if(key === 'Backspace'){
+            const previousWordElement = currentWordElement.previousElementSibling
+            const previousLetterElement = currentLetterElement.previousElementSibling
+
+            // Solo si estamos en la primera letra y la palabra anterior está marcada
+            if(previousWordElement && !previousLetterElement && previousWordElement.classList.contains('marked')){
+                event.preventDefault();
+                previousWordElement.classList.remove('marked'); // Quita la línea roja
+                previousWordElement.classList.remove('correct'); // Quita el verde si lo tuviera
+                previousWordElement.classList.add('active');
+                currentWordElement.classList.remove('active');
+                currentLetterElement.classList.remove('active');
+
+                // Buscar la última letra escrita (correcta o incorrecta)
+                const allPrevLetters = previousWordElement.querySelectorAll('x-letter');
+                let lastTypedIndex = -1;
+                allPrevLetters.forEach((l, idx) => {
+                    if(l.classList.contains('correct') || l.classList.contains('incorrect')) lastTypedIndex = idx;
+                });
+
+                allPrevLetters.forEach(l => l.classList.remove('active', 'is-last'));
+                if(lastTypedIndex >= 0) {
+                    allPrevLetters[lastTypedIndex].classList.add('active');
+                    // Solo letras que el usuario ya escribió (correctas o incorrectas)
+                    const typedLetters = previousWordElement.querySelectorAll('x-letter.correct, x-letter.incorrect');
+                    inputElement.value = Array.from(typedLetters).map($el =>
+                        $el.classList.contains('correct') ? $el.innerText : '*'
+                    ).join('');
+                } else {
+                    allPrevLetters[0].classList.add('active');
+                    inputElement.value = '';
+                }
+                return;
+            }
+        }
+    }
     function onKeyUp(){
         //recuperar elementos actuales
-        const currentWordElement = paragraphElement.querySelector('x-word.active');
-        const currentLetterElement = currentWordElement.querySelector('x-letter.active');
-        const currentWord = currentWordElement.innerText.trim();
+        const currentWordElement = paragraphElement.querySelector('x-word.active')
+        const currentLetterElement = currentWordElement.querySelector('x-letter.active')
+        const currentWord = currentWordElement.innerText.trim()
         inputElement.maxLength = currentWord.length
-        console.log({ value: inputElement.value, currentWord });
+        console.log({ value: inputElement.value, currentWord })
 
-        const allLettersElement = currentWordElement.querySelectorAll('x-letter');
+        const allLettersElement = currentWordElement.querySelectorAll('x-letter')
+
+        allLettersElement.forEach(letter => letter.classList.remove('correct', 'incorrect'))
         inputElement.value.split('').forEach((char,index) => {
             const letterElement = allLettersElement[index]
             const letterToCheck = currentWord[index]
@@ -145,6 +230,17 @@
            
             letterElement.classList.add(letterClass)
         });
+
+        //mover el cusor cada vez que se escribe una letra
+        currentLetterElement.classList.remove('active', 'is-last')
+        const inputLength = inputElement.value.length
+        const nextActiveLetterElement = allLettersElement[inputLength]
+        if(nextActiveLetterElement){
+            nextActiveLetterElement.classList.add('active')
+        }else{
+            currentLetterElement.classList.add('active', 'is-last')
+        }
+       
     }
 
 
