@@ -8,7 +8,7 @@ Este es **mi** repositorio personal de mini-proyectos en **JavaScript puro (Vani
 
 ---
 
-## 🤸‍♂️ Reglas del juego (mi filosofía)
+## Reglas
 
 - **Cero dependencias**
 - **Un proyecto, una carpeta**: cada mini-app vive aislada con su `index.html`, `styles.css` y `main.js`.
