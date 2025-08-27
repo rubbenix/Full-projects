@@ -1,0 +1,155 @@
+<style>
+    :root{
+        color-scheme: light dark;
+        --green: #4ade80;
+        --red: #f87171;
+        --yellow: #fbbf24;
+        --black: #222;
+        --gray: #8f9195;
+    }
+    body{
+        background: var(--black);
+        font-family: Menlo, monospace;
+        display: grid;
+        padding: 32px;
+        justify-content: center;
+        margin-top: 32px;
+        padding: 16px;
+    }
+    section{
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 500px;
+    }
+    time{
+        color: var(--green);
+    }
+    input{
+        z-index: -999;
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        /*opacity: 0;*/
+    }
+    p{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px 8px;
+        margin: 0px;
+    }
+    x-letter {
+        color: var(--gray);
+        position: relative;
+        &.active::before {
+            content: '|';
+            color: var(--yellow);
+            font-size: 14px;
+            position: absolute;
+            left: -8px;
+            animation: 1.2s blink infinite ease-in-out;
+        }
+    }
+    @keyframes blink {
+        0%, 25% { opacity: 1; }
+        75% { opacity: 0; }
+    }
+</style>
+
+<body>
+    <main>
+        <section id = "game">
+            <time id="timer"></time>
+            <p id="p"></p>
+            <input autofocus id="input">
+        </section>
+    </main>
+</body>
+
+<script>
+    const timerElement = document.getElementById("timer");
+    const paragraphElement = document.getElementById("p");
+    const inputElement = document.getElementById("input");
+
+    const INITIAL_TIME = 60;
+    const TEXT = "The world blue is our over beautiful things.";
+
+    let currentTime = INITIAL_TIME;
+    let words = [];
+
+    initGame();
+    initEvents();
+
+    function initGame() {
+        words = TEXT.split(' ').slice(0, 32);
+        currentTime = INITIAL_TIME;
+
+        timerElement.textContent = currentTime;
+
+        paragraphElement.innerHTML = words.map((word, index) => {
+            const letters = word.split('')
+            //también podriamos substituir <x-word> por <span>  
+            //Custom elements, creas tus propias etiquetas
+            return `<x-word>
+                ${letters
+                    .map(letter => `<x-letter>${letter}</x-letter>`)
+                    .join('')}
+            </x-word>
+            `
+        }).join('');
+    }
+
+    //Seleccionamos la primera palabra del párrafo
+    const firstWordElement = paragraphElement.querySelector('x-word');
+    firstWordElement.classList.add('active');
+    firstWordElement.querySelector('x-letter').classList.add('active');
+
+    const intervalId = setInterval(() => {
+        currentTime--;
+        timerElement.textContent = currentTime;
+
+        if (currentTime === 0) {
+            clearInterval(intervalId);
+            gameOver();
+        }
+    }, 1000);
+
+
+    function initEvents() {
+        // Focus on the input when a key is pressed (testear live)
+        document.addEventListener('keydown', () => {
+            inputElement.focus();
+        });
+
+        inputElement.addEventListener('keydown', onKeyDown);
+        inputElement.addEventListener('keyup', onKeyUp);
+    }
+    function onKeyDown(){}
+    function onKeyUp(){
+        //recuperar elementos actuales
+        const currentWordElement = paragraphElement.querySelector('x-word.active');
+        const currentLetterElement = currentWordElement.querySelector('x-letter.active');
+        const currentWord = currentWordElement.innerText.trim();
+        inputElement.maxLength = currentWord.length
+        console.log({ value: inputElement.value, currentWord });
+
+        const allLettersElement = currentWordElement.querySelectorAll('x-letter');
+        inputElement.value.split('').forEach((char,index) => {
+            const letterElement = allLettersElement[index]
+            const letterToCheck = currentWord[index]
+
+            const isCorrect = letterToCheck === char
+            const letterClass = isCorrect ? 'correct' : 'incorrect'
+           
+            letterElement.classList.add(letterClass)
+        });
+    }
+
+
+    function gameOver(){
+        console.log("Game Over");
+    }
+</script>
+    
